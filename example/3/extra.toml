@@ -1,0 +1,6 @@
+comment = "ykmruby_master"
+
+[executors]
+mruby = "~/ykmruby/build/default_yk_config/bin/mruby"
+
+[suite_env.awfy]

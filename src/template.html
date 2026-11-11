@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>@REPO benchmark history</title>
+<style>
+  body {
+    background: #fff;
+    color: #000;
+    margin: 16px
+  }
+
+  li {
+    font-family: monospace
+  }
+
+  .pair {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px
+  }
+
+  .pair div {
+    flex: 1 1 22rem;
+    aspect-ratio: 2;
+    max-width: 1200px
+  }
+</style>
+<h1>@REPO benchmark history</h1>
+Generated: @GENERATED
+<h2>Summary</h2>
+<div class=pair id=summary></div>
+<a href='#prs'>View measured PRs</a>
+<div id=benchmarks></div>
+<h2 id=prs>Measured PRs</h2>
+<ol id=prlist></ol>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  // PAGE comes from page_data: PRs and points are already in merge order.
+  const PAGE = @PAGE;
+  const label = p => `PR #${p.pr}`, day = p => p.date.slice(0, 10);
+  const prUrl = n => `https://github.com/${PAGE.repo}/pull/${n}`;
+  const el = (tag, props) => Object.assign(document.createElement(tag), props);
+  const base = `PR #${PAGE.base}`;
+
+  // One x-axis category per PR.
+  function chart(parent, title, ylabel, color, points, y) {
+    const div = el('div'), canvas = el('canvas');
+    div.append(canvas);
+    parent.append(div);
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: points.map(label),
+        datasets: [{
+          data: points.map(p => ({ x: label(p), y: y(p), p })), borderColor: color,
+          borderWidth: 1, pointRadius: 5, pointHoverRadius: 7, pointBackgroundColor: '#fff'
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        onClick: (e, els) => els.length && open(prUrl(points[els[0].index].pr)),
+        scales: {
+          x: { offset: true, title: { display: true, text: 'PR' } },
+          y: { grace: '5%', title: { display: true, text: ylabel } }
+        },
+        plugins: {
+          title: { display: true, text: title, font: { size: 16, weight: 'normal' } },
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => `${c.raw.y}  ${day(c.raw.p)}  ${c.raw.p.title}` } }
+        }
+      }
+    });
+  }
+
+  const summary = PAGE.prs.filter(p => p.geomean !== null);
+  if (summary.length)
+    chart(document.getElementById('summary'),
+      `Performance relative to ${base} over all benchmarks (y < 1 means we are mostly faster)`,
+      `Performance relative to ${base}`, 'magenta', summary, p => p.geomean);
+
+  for (const b of PAGE.benchmarks) {
+    const last = b.points.at(-1), pair = el('div', { className: 'pair' });
+    document.getElementById('benchmarks').append(el('h2', { textContent: b.name }),
+      el('p', { textContent: `Last PR is ${last.pr} (${day(last)})` }), pair);
+    chart(pair, 'Benchmark performance over time', 'Wallclock time (ms)', 'red', b.points, p => p.ms);
+  }
+
+  for (const p of PAGE.prs) {
+    const li = el('li');
+    li.append(`${day(p)} `, el('a', { href: prUrl(p.pr), textContent: `#${p.pr}` }),
+      ` ${p.title}`, p.geomean !== null ? ` (${p.geomean})` : '');
+    document.getElementById('prlist').append(li);
+  }
+</script>

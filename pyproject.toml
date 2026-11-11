@@ -1,0 +1,10 @@
+[project]
+name = "haste-pages"
+version = "0.1.0"
+description = "Chart haste benchmark results from merged PRs on GitHub Pages"
+readme = "README.md"
+authors = [
+    { name = "Pavel Durov", email = "pavel@p3ld3v.dev" }
+]
+requires-python = ">=3.11"
+dependencies = []

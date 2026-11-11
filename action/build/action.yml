@@ -1,0 +1,30 @@
+name: haste-pages
+description: Store the merged PR's haste results on haste-results and upload the chart as a Pages artifact.
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        root="$GITHUB_ACTION_PATH/../.."
+        if git ls-remote --exit-code --heads origin haste-results; then
+          git fetch --depth=1 origin haste-results
+          git worktree add results FETCH_HEAD
+        else
+          git worktree add --orphan -b haste-results results
+        fi
+        uv run --project "$root" "$root/src/main.py" "$GITHUB_REPOSITORY" results --store "$GITHUB_SHA"
+        cd results
+        git add -A
+        if ! git diff --cached --quiet; then
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Add haste results from $GITHUB_SHA"
+          git push origin HEAD:haste-results
+        fi
+    - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+      with:
+        path: site

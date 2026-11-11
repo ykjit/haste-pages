@@ -1,0 +1,14 @@
+name: haste-pages-remind
+description: Comment on a newly opened PR whose description does not attach haste.zip.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        if ! grep -qE 'https://github\.com/user-attachments/files/[0-9]+/haste\.zip' <<< "$(gh pr view "$PR" --json body --jq .body)"; then
+          gh pr comment "$PR" --body "To chart haste results for this PR, attach haste's \`data.toml\` and \`extra.toml\`, zipped as \`haste.zip\`, to the PR description."
+        fi

@@ -1,0 +1,6 @@
+comment = "ykmruby-dispatch-loop"
+
+[executors]
+mruby = "~/ykmruby/build/yk_wordboxing/bin/mruby"
+
+[suite_env.awfy]
